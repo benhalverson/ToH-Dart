@@ -21,7 +21,7 @@ void main() {
   });
 
   test('Greet twitch', () async {
-    await fixture.update((c) => c.name = 'World');
+    await fixture.update((c) => c.hero = {1, 'Winstorm'});
     expect(fixture.text, 'Hello World');
   });
 
