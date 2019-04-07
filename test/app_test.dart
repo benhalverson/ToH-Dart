@@ -1,91 +1,76 @@
-@TestOn('browser')
+// @TestOn('browser')
 
-import 'package:angular_app/app_component.dart';
-import 'package:angular_app/app_component.template.dart' as ng;
 import 'package:angular_test/angular_test.dart';
-import 'package:test/test.dart';
 import 'package:pageloader/html.dart';
-import 'app_po.dart';
+import 'package:test/test.dart';
+
+import '../lib/src/hero.dart';
+import '../lib/src/hero_component.dart';
+import '../lib/src/hero_component.template.dart' as ng;
+
+import 'hero_detail_po.dart';
+
+const targetHero = {'id': 1, 'name': 'Alice'};
+
+NgTestFixture<HeroComponent> fixture;
+HeroDetailPO po;
 
 void main() {
   final testBed =
-      NgTestBed.forComponent<AppComponent>(ng.AppComponentNgFactory);
-  NgTestFixture<AppComponent> fixture;
-  AppPO appPO;
+      NgTestBed.forComponent<HeroComponent>(ng.HeroComponentNgFactory);
 
-  void main() {
-    final testBed =
-        NgTestBed.forComponent<AppComponent>(ng.AppComponentNgFactory);
+  tearDown(disposeAnyRunningTest);
 
+  group('No initial @Input() hero:', () {
     setUp(() async {
       fixture = await testBed.create();
       final context =
           HtmlPageLoaderElement.createFromElement(fixture.rootElement);
-
-      appPO = AppPO.create(context);
+      po = HeroDetailPO.create(context);
     });
 
-    tearDown(disposeAnyRunningTest);
+    test('has empty view', () {
+      expect(fixture.rootElement.text.trim(), '');
+      expect(po.heroFromDetail, isNull);
+    });
 
-    void basicTests() {
-      test('page title', () async {
-        expect(await appPO.pageTitle, 'Tour of Heros');
+    test('transition to ${targetHero['name']} hero', () async {
+      await fixture.update((comp) {
+        comp.hero = Hero(targetHero['id'], targetHero['name']);
       });
+      expect(po.heroFromDetail, targetHero);
+    });
+  });
 
-      test('tab title', () async {
-        expect(await appPO.tabTitle, 'Heroes');
-      });
+  group('${targetHero['name']} initial @Input() hero:', () {
+    final Map updatedHero = {'id': targetHero['id']};
 
-      test('hero count', () {
-        expect(appPO.heroes.length, 10);
-      });
+    setUp(() async {
+      fixture = await testBed.create(
+          beforeChangeDetection: (c) =>
+              c.hero = Hero(targetHero['id'], targetHero['name']));
+      final context =
+          HtmlPageLoaderElement.createFromElement(fixture.rootElement);
+      po = HeroDetailPO.create(context);
+    });
 
-      test('no selected heroes', () async {
-        expect(await appPO.selected, null);
-      });
-    }
+    test('show hero details', () {
+      expect(po.heroFromDetail, targetHero);
+    });
 
-    void selectHeroTests() {
-      const targetHero = {'id': 16, 'name': 'Rubberman'};
+    test('update name', () async {
+      const nameSuffix = 'X';
+      updatedHero['name'] = "${targetHero['name']}$nameSuffix";
+      await po.type(nameSuffix);
+      expect(po.heroFromDetail, updatedHero);
+    });
 
-      setUp(() async {
-        await appPO.selectedHero(5);
-      });
-
-      test('is selected', () async {
-        expect(await appPO.selected, targetHero);
-      });
-
-      test('show hero details', () async {
-        expect(await appPO.heroFromDetails, targetHero);
-      });
-
-      group('Update Hero:', () {
-        const nameSuffix = 'X';
-        final updatedHero = Map.from(targetHero);
-        updatedHero['name'] = "${targetHero['name']}$nameSuffix";
-
-        setUp(() async {
-          await appPO.type(nameSuffix);
-        });
-
-        tearDown(() async {
-          // restore hero name
-          await appPO.clear();
-          await appPO.type(targetHero['name']);
-        });
-
-        test('name in list is update', () async {
-          expect(await appPO.selected, updatedHero);
-        });
-
-        test('name in details view is updated', () async {
-          expect(await appPO.heroFromDetails, updatedHero);
-        });
-      });
-    }
-
-    group('Basics', basicTests);
-    group('Select hero', selectHeroTests);
-  }
+    test('change name', () async {
+      const newName = 'Bobbie';
+      updatedHero['name'] = newName;
+      await po.clear();
+      await po.type(newName);
+      expect(po.heroFromDetail, updatedHero);
+    });
+  });
 }
