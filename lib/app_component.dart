@@ -10,7 +10,7 @@ import 'src/hero_service.dart';
     styleUrls: ['app_component.css'],
     directives: [coreDirectives, formDirectives, HeroComponent],
     providers: [ClassProvider(HeroService)])
-class AppComponent {
+class AppComponent implements OnInit {
   final title = 'Tour of Heroes';
   final HeroService _heroService;
   List<Hero> heroes;
