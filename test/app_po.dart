@@ -8,27 +8,53 @@ abstract class AppPO {
   AppPO();
   factory AppPO.create(PageLoaderElement content) = $AppPO.create;
 
-  @First(ByCss('div'))
-  PageLoaderElement get _id;
+  @ByTagName('h1')
+  PageLoaderElement get _pageTitle;
 
-  int get heroId {
-    final idAsString = _id.visibleText.split(':')[1];
-    return int.tryParse(idAsString) ?? -1;
-  }
-
-  @ByTagName('h2')
-  PageLoaderElement get _heroName;
+  @First(ByCss('h2'))
+  PageLoaderElement get _tabTitle;
 
   @ByTagName('li')
   List<PageLoaderElement> get _heroes;
 
+  @ByTagName('li')
+  @WithClass('selected')
+  PageLoaderElement get _selected;
+
+  @First(ByCss('div h2'))
+  PageLoaderElement get _heroDetailHeading;
+
+  @First(ByCss('div div'))
+  PageLoaderElement get _heroDetailId;
+
+  @ByTagName('input')
+  PageLoaderElement get _input;
+
+  String get pageTitle => _pageTitle.visibleText;
+  String get tabTitle => _tabTitle.visibleText;
+
   Iterable<Map> get heroes =>
       _heroes.map((el) => _heroDataFromLi(el.visibleText));
+
+  Future<void> selectedHero(int index) => _heroes[index].click();
+
+  Map get selected =>
+      _selected.exists ? _heroDataFromLi(_selected.visibleText) : null;
+
+  Map get heroFromDetails {
+    if (!_heroDetailId.exists) return null;
+    final idAsString = _heroDetailId.visibleText.split(':')[1];
+    return _heroData(idAsString, _heroDetailHeading.visibleText);
+  }
+
+  Future<void> clear() => _input.clear();
+  Future<void> type(String s) => _input.type(s);
+
+  Map<String, dynamic> _heroData(String idAsString, String name) =>
+      {'id': int.tryParse(idAsString) ?? -1, 'name': name};
 
   Map<String, dynamic> _heroDataFromLi(String liText) {
     final matches = RegExp((r'^(\d+) (.*)$')).firstMatch(liText);
     return _heroData(matches[1], matches[2]);
   }
-
-  String get heroName => _heroName.visibleText;
 }
